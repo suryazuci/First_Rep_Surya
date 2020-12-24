@@ -1,0 +1,122 @@
+import schedule
+import time 
+import imaplib
+import email
+from email.header import decode_header
+import os
+import re
+import unittest
+
+allsub=[]
+uniquesub=[]
+dict={}
+# account credentials
+username = "tech.suryak@gmail.com"
+password = "KOTAsurya@1205"
+class TestClass(unittest.TestCase):
+    def setUp(self):
+        print('setup the environment')
+    def testing_functionality(self):
+        print('testing functionality')
+        
+        def func():
+            print("Schedule Is Running")
+            def clean(text):
+                return "".join(c if c.isalnum() else "_" for c in text)
+
+            imap = imaplib.IMAP4_SSL("imap.gmail.com")
+            imap.login(username, password)
+            status, messages = imap.select("INBOX")
+            N = 10
+            messages = int(messages[0]) 
+            #print(messages)#     
+            for i in range(messages, messages-N, -1):
+                res, msg = imap.fetch(str(i), "(RFC822)")
+                for response in msg:
+                    if isinstance(response, tuple):
+                        msg = email.message_from_bytes(response[1])
+                        subject, encoding = decode_header(msg["Subject"])[0]
+                        if isinstance(subject, bytes):
+                            subject = subject.decode(encoding)
+                            print(subject)
+                        From, encoding = decode_header(msg.get("From"))[0]
+                        if isinstance(From, bytes):
+                            From = From.decode(encoding)
+                        print("Subject:", subject)
+                        print("From:", From)
+                        print()
+                        allsub.append(subject)
+                        #print(len(allsub))
+                        #print(allsub)
+                        #print(list.count(subject))
+                        for i in allsub:
+                            #dict[i]=list.count(i)
+                            if i not in uniquesub:
+                                uniquesub.append(i)
+                                #print(uniquesub) print all subject names uniquely
+                                      
+                        if msg.is_multipart():
+                            for part in msg.walk():
+                                content_type = part.get_content_type()
+                                content_disposition = str(part.get("Content-Disposition"))
+                                try:
+                                    body = part.get_payload(decode=True).decode()
+                                except:
+                                    pass
+                                if content_type == "text/plain" and "attachment" not in content_disposition:
+                                    print(body) # getting the body of email
+                                    #print('')
+                                elif "attachment" in content_disposition:
+                                    filename = part.get_filename()
+                                    if filename:
+                                        folder_name = clean(subject)
+                                        if not os.path.isdir(folder_name):
+                                            os.mkdir(folder_name)
+                                        filepath = os.path.join(folder_name, filename)
+                                        open(filepath, "wb").write(part.get_payload(decode=True))
+                        else:
+                            content_type = msg.get_content_type()
+                            body = msg.get_payload(decode=True).decode()
+                            if content_type == "text/plain":
+                                print(body)
+                        if content_type == "text/html":                    
+                            folder_name = clean(subject)                    
+                        print("-"*100)
+            print('allsubjects:',allsub)
+            print('uniquesubjects:',uniquesub)
+            convert_allsub_str=' '.join(uniquesub)
+            first_sub=''.join(uniquesub[0])
+            #print('firstsubject in string::', first_sub)
+            find_fsub=re.findall(first_sub,convert_allsub_str)
+            print('first subject alone in list::',find_fsub)
+            second_sub=''.join(uniquesub[1])
+            #print('secondsubject in string::', first_sub)
+            find_secondsub=re.findall(second_sub,convert_allsub_str)
+            print('second subject alone in list::',find_secondsub)
+
+            third_sub=''.join(uniquesub[2])
+            #print('thirdsubject in string::', third_sub)
+            find_thirdsub=re.findall(third_sub,convert_allsub_str)
+            print('third subject alone in list::',find_thirdsub)
+            fourth_sub=''.join(uniquesub[3])
+            #print('fourthsubject in string::', fourth_sub)
+            find_fourthsub=re.findall(fourth_sub,convert_allsub_str)
+            print('fourth subject alone in list::',find_fourthsub)
+            
+            #print(dict)
+            imap.close()
+            imap.logout()
+            print('\n')
+            print('Schedule Is Ending')
+
+        schedule.every(5).minutes.do(func)
+        
+
+        while True:
+            schedule.run_pending()
+            
+    def tearDown(self):
+        print('test after clearing the setup')
+
+
+unittest.main()
